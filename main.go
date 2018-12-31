@@ -1,6 +1,6 @@
 package main
 
-import "github.com/yhidetoshi/mackerel-agent-plugins/mackerel-plugin-aws-elb/lib"
+import "github.com/yhidetoshi/mackerel-plugin-awsbilling/lib"
 
 func main() {
 	mpawsbilling.Do()

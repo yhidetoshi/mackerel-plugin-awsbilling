@@ -17,33 +17,31 @@ const (
 	metricsTypeMaximum = "Maximum"
 )
 
-type metricsGroup struct{
+type metricsGroup struct {
 	CloudWatchName string
-	Metrics 	   []metric
+	Metrics        []metric
 }
 
-
-type metric struct{
+type metric struct {
 	MackerelName string
-	Type string
+	Type         string
 }
 
-type AwsBillingPlugin struct{
-	Name			string
-	Region 			string
-	AccessKeyID		string
+type AwsBillingPlugin struct {
+	Name            string
+	Region          string
+	AccessKeyID     string
 	SecretAccessKey string
-	LabelPrefix		string
-	CloudWatch		*cloudwatch.CloudWatch
+	LabelPrefix     string
+	CloudWatch      *cloudwatch.CloudWatch
 }
 
-func (p AwsBillingPlugin) MetricsLabelPrefix() string{
-	if p.LabelPrefix == ""{
+func (p AwsBillingPlugin) MetricsLabelPrefix() string {
+	if p.LabelPrefix == "" {
 		return "AWS/Billing"
 	}
 	return p.LabelPrefix
 }
-
 
 func (p *AwsBillingPlugin) prepare() error {
 	sess, err := session.NewSession()
@@ -64,7 +62,7 @@ func (p *AwsBillingPlugin) prepare() error {
 	return nil
 }
 
-func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metricsGroup) (*cloudwatch.Datapoint, error) {
+func getLastPointCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metricsGroup) (*cloudwatch.Datapoint, error) {
 	statsInput := make([]*string, len(metric.Metrics))
 	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
@@ -96,35 +94,47 @@ func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metrics
 	}
 
 	latest := new(time.Time)
-	var latestDp *cloudwatch.Datapoint
+
+	var latestDataPoint *cloudwatch.Datapoint
 	for _, dp := range datapoints {
 		if dp.Timestamp.Before(*latest) {
 			continue
 		}
 
 		latest = dp.Timestamp
-		latestDp = dp
+		latestDataPoint = dp
 	}
 
-	return latestDp, nil
+	return latestDataPoint, nil
 }
 
+var awsBillingGroup = []metricsGroup{
+	{
+		CloudWatchName: "EstimatedCharges", Metrics: []metric{
+			{
+				MackerelName: "EstimatedCharges", Type: metricsTypeMaximum,
+			},
+		},
+	},
+}
+
+// FetchMetricsの関数名は固定(go-mackerel-pluginで既定)
 func (p AwsBillingPlugin) FetchMetrics() (map[string]float64, error) {
 	stats := make(map[string]float64)
-	for _, met := range AwsGroup {
-		v, err := getLastPointFromCloudWatch(p.CloudWatch,met)
+
+	for _, met := range awsBillingGroup {
+		value, err := getLastPointCloudWatch(p.CloudWatch, met)
 		if err != nil {
 			err.Error()
 		}
-		if v != nil {
-			stats = mergeStatsFromDatapoint(stats, v, met)
+		if value != nil {
+			stats = mergeStatsDatapoint(stats, value, met)
 		}
 	}
 	return stats, nil
 }
 
-
-func mergeStatsFromDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint, mg metricsGroup) map[string]float64 {
+func mergeStatsDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint, mg metricsGroup) map[string]float64 {
 	for _, met := range mg.Metrics {
 		switch met.Type {
 		case metricsTypeMaximum:
@@ -132,14 +142,6 @@ func mergeStatsFromDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint,
 		}
 	}
 	return stats
-}
-
-
-
-var AwsGroup = []metricsGroup{
-	{CloudWatchName: "EstimatedCharges", Metrics: []metric{
-		{MackerelName: "EstimatedCharges", Type: metricsTypeMaximum},
-	}},
 }
 
 func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
@@ -150,15 +152,15 @@ func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 			Label: labelPrefix,
 			Unit:  mp.UnitFloat,
 			Metrics: []mp.Metrics{
-				{Name: "EstimatedCharges", Label: "EstimatedCharges", Stacked: true},
+				{
+					Name: "EstimatedCharges", Label: "EstimatedCharges", Stacked: true,
+				},
 			},
 		},
 	}
 	return graphdef
 }
 
-
-// Do the plugin
 func Do() {
 	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
@@ -171,7 +173,7 @@ func Do() {
 	plugin.Region = *optRegion
 
 	err := plugin.prepare()
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 

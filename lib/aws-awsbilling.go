@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
@@ -15,9 +14,6 @@ import (
 )
 
 const (
-	namespace 		   = "AWS/Billing"
-	region 			   = "us-east-1"
-	metricsName  	   = "EstimatedCharges"
 	metricsTypeMaximum = "Maximum"
 )
 
@@ -49,7 +45,7 @@ func (p AwsBillingPlugin) MetricsLabelPrefix() string{
 }
 
 
-func (p AwsBillingPlugin) prepare() error {
+func (p *AwsBillingPlugin) prepare() error {
 	sess, err := session.NewSession()
 	if err != nil {
 		return err
@@ -69,27 +65,24 @@ func (p AwsBillingPlugin) prepare() error {
 }
 
 func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metricsGroup) (*cloudwatch.Datapoint, error) {
-	now := time.Now()
 	statsInput := make([]*string, len(metric.Metrics))
 	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
 	}
 	input := &cloudwatch.GetMetricStatisticsInput{
-		StartTime:  aws.Time(now.Add(time.Duration(300) * time.Second * -1)), // 5 min
-		EndTime:    aws.Time(now),
-		MetricName: aws.String(metric.CloudWatchName),
-		Period:     aws.Int64(60),
-		Statistics: statsInput,
-		Namespace:  aws.String(namespace),
+		StartTime:  aws.Time(time.Now().Add(time.Hour * -24)),
+		EndTime:    aws.Time(time.Now()),
+		MetricName: aws.String("EstimatedCharges"),
+		Period:     aws.Int64(86400),
+		Statistics: []*string{
+			aws.String(cloudwatch.StatisticMaximum),
+		},
+		Namespace: aws.String("AWS/Billing"),
 	}
 	input.Dimensions = []*cloudwatch.Dimension{
 		{
-			Name:  aws.String("BucketName"),
-			Value: aws.String(bucketName),
-		},
-		{
-			Name:  aws.String("FilterId"),
-			Value: aws.String(filterID),
+			Name:  aws.String("Currency"),
+			Value: aws.String("USD"),
 		},
 	}
 	response, err := cw.GetMetricStatistics(input)
@@ -116,18 +109,20 @@ func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metrics
 	return latestDp, nil
 }
 
-// FetchMetrics fetch elb metrics
 func (p AwsBillingPlugin) FetchMetrics() (map[string]float64, error) {
 	stats := make(map[string]float64)
-	v, err := getLastPointFromCloudWatch(p.CloudWatch)
-	if err != nil{
-		err.Error()
-	}
-	if v != nil {
-		stats = mergeStatsFromDatapoint(stats, err)
+	for _, met := range AwsGroup {
+		v, err := getLastPointFromCloudWatch(p.CloudWatch,met)
+		if err != nil {
+			err.Error()
+		}
+		if v != nil {
+			stats = mergeStatsFromDatapoint(stats, v, met)
+		}
 	}
 	return stats, nil
 }
+
 
 func mergeStatsFromDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint, mg metricsGroup) map[string]float64 {
 	for _, met := range mg.Metrics {
@@ -139,9 +134,11 @@ func mergeStatsFromDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint,
 	return stats
 }
 
+
+
 var AwsGroup = []metricsGroup{
-	{CloudWatchName: "AllRequests", Metrics: []metric{
-		{MackerelName: "AllRequests", Type: metricsTypeSum},
+	{CloudWatchName: "EstimatedCharges", Metrics: []metric{
+		{MackerelName: "EstimatedCharges", Type: metricsTypeMaximum},
 	}},
 }
 
@@ -151,9 +148,9 @@ func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 	graphdef := map[string]mp.Graphs{
 		"requests": {
 			Label: labelPrefix,
-			Unit:  mp.UnitInteger,
+			Unit:  mp.UnitFloat,
 			Metrics: []mp.Metrics{
-				{Name: "EstimatedCharges", Label: "EstimatedCharges", Stacked: "true"},
+				{Name: "EstimatedCharges", Label: "EstimatedCharges", Stacked: true},
 			},
 		},
 	}
@@ -165,11 +162,13 @@ func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 func Do() {
 	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
+	optRegion := flag.String("region", "", "AWS Region")
 	flag.Parse()
 
 	var plugin AwsBillingPlugin
 	plugin.AccessKeyID = *optAccessKeyID
 	plugin.SecretAccessKey = *optSecretAccessKey
+	plugin.Region = *optRegion
 
 	err := plugin.prepare()
 	if err != nil{

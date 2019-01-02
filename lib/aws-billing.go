@@ -62,7 +62,7 @@ func (p *AwsBillingPlugin) prepare() error {
 	return nil
 }
 
-func getLastPointCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metricsGroup) (*cloudwatch.Datapoint, error) {
+func getLastPointCloudWatch(cwi cloudwatchiface.CloudWatchAPI, metric metricsGroup) (*cloudwatch.Datapoint, error) {
 	statsInput := make([]*string, len(metric.Metrics))
 	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
@@ -83,7 +83,7 @@ func getLastPointCloudWatch(cw cloudwatchiface.CloudWatchAPI, metric metricsGrou
 			Value: aws.String("USD"),
 		},
 	}
-	response, err := cw.GetMetricStatistics(input)
+	response, err := cwi.GetMetricStatistics(input)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,6 @@ var awsBillingGroup = []metricsGroup{
 	},
 }
 
-// FetchMetricsの関数名は固定(go-mackerel-pluginで既定)
 func (p AwsBillingPlugin) FetchMetrics() (map[string]float64, error) {
 	stats := make(map[string]float64)
 

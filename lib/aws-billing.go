@@ -58,7 +58,6 @@ func (p *AwsBillingPlugin) prepare() error {
 	}
 
 	p.CloudWatch = cloudwatch.New(sess, config)
-
 	return nil
 }
 
@@ -104,7 +103,6 @@ func getLastPointCloudWatch(cwi cloudwatchiface.CloudWatchAPI, metric metricsGro
 		latest = dp.Timestamp
 		latestDataPoint = dp
 	}
-
 	return latestDataPoint, nil
 }
 
@@ -140,6 +138,7 @@ func mergeStatsDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint, mg 
 			stats[met.MackerelName] = *dp.Maximum
 		}
 	}
+
 	return stats
 }
 
@@ -157,6 +156,7 @@ func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 			},
 		},
 	}
+
 	return graphdef
 }
 

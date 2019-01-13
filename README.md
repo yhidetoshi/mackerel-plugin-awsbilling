@@ -1,6 +1,7 @@
+[![CircleCI](https://circleci.com/gh/yhidetoshi/mackerel-plugin-awsbilling/tree/master.svg?style=svg)](https://circleci.com/gh/yhidetoshi/mackerel-plugin-awsbilling/tree/master)
+
 # mackerel-plugin-awsbilling
 
-[![CircleCI](https://circleci.com/gh/yhidetoshi/mackerel-plugin-awsbilling/tree/master.svg?style=svg)](https://circleci.com/gh/yhidetoshi/mackerel-plugin-awsbilling/tree/master)
 
 AWS billing custom metrics plugin for mackerel.io agent
 

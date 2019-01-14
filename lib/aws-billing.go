@@ -27,6 +27,7 @@ type metric struct {
 	Type         string
 }
 
+// AwsBillingPlugin mackerel plugin
 type AwsBillingPlugin struct {
 	Name            string
 	Region          string
@@ -36,6 +37,7 @@ type AwsBillingPlugin struct {
 	CloudWatch      *cloudwatch.CloudWatch
 }
 
+// MetricKeyPrefix interface for PluginWithPrefix
 func (p AwsBillingPlugin) MetricsLabelPrefix() string {
 	if p.LabelPrefix == "" {
 		return "AWS/Billing"
@@ -116,6 +118,7 @@ var awsBillingGroup = []metricsGroup{
 	},
 }
 
+// FetchMetrics interface for mackerelplugin
 func (p AwsBillingPlugin) FetchMetrics() (map[string]float64, error) {
 	stats := make(map[string]float64)
 
@@ -143,6 +146,7 @@ func mergeStatsDatapoint(stats map[string]float64, dp *cloudwatch.Datapoint, mg 
 	return stats
 }
 
+// GraphDefinition interface for mackerelplugin
 func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 	labelPrefix := p.MetricsLabelPrefix()
 
@@ -161,6 +165,7 @@ func (p AwsBillingPlugin) GraphDefinition() map[string]mp.Graphs {
 	return graphdef
 }
 
+// Do the plugin
 func Do() {
 	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")

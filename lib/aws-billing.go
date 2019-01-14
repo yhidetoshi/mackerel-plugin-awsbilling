@@ -122,12 +122,13 @@ func (p AwsBillingPlugin) FetchMetrics() (map[string]float64, error) {
 	for _, met := range awsBillingGroup {
 		value, err := getLastPointCloudWatch(p.CloudWatch, met)
 		if err != nil {
-			err.Error()
+			return nil, err
 		}
 		if value != nil {
 			stats = mergeStatsDatapoint(stats, value, met)
 		}
 	}
+
 	return stats, nil
 }
 

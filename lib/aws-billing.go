@@ -37,7 +37,7 @@ type AwsBillingPlugin struct {
 	CloudWatch      *cloudwatch.CloudWatch
 }
 
-// MetricKeyPrefix interface for PluginWithPrefix
+// MetricsLabelPrefix interface for PluginWithPrefix
 func (p AwsBillingPlugin) MetricsLabelPrefix() string {
 	if p.LabelPrefix == "" {
 		return "AWS/Billing"

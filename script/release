@@ -7,5 +7,5 @@
 set -e
 latest_tag=$(git describe --abbrev=0 --tags)
 goxz -d dist/$latest_tag -z -os windows,darwin,linux -arch amd64,386
-ghr -u yhidetoshi -r mackerel-plugin-awsbilling $latest_tag dist/$latest_tag
+ghr -u yhidetoshi --token $GITHUB_TOKEN -r mackerel-plugin-awsbilling $latest_tag dist/$latest_tag
 

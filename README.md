@@ -8,7 +8,7 @@ AWS billing custom metrics plugin for mackerel.io agent
 
 ## Synopsis
 ```
-mkr-plugin-aws-billing -region=us-east-1 -access-key-id=<id> -secret-access-key=<key>
+mackerel-plugin-awsbilling -region=us-east-1 -access-key-id=<id> -secret-access-key=<key>
 ```
 
 ## AWS IAM Policy
@@ -18,5 +18,5 @@ the credential provided manually or fetched automatically by IAM Role should hav
 ## Example of mackerel-agent.conf
 ```
 [plugin.metrics.awsbilling]
-command = '/path/to/mkr-plugin-aws-billing -region us-east-1'
+command = '/path/to/mackerel-plugin-awsbilling -region us-east-1'
 ```

@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/yhidetoshi/mackerel-plugin-awsbilling.svg?branch=master)](https://travis-ci.org/yhidetoshi/mackerel-plugin-awsbilling)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+
 # mackerel-plugin-awsbilling
 
 

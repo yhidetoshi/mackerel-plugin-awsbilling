@@ -6,6 +6,11 @@
 
 AWS billing custom metrics plugin for mackerel.io agent
 
+## Install
+```
+mkr plugin install mackerel-plugin-awsbilling
+```
+
 ## Synopsis
 ```
 mackerel-plugin-awsbilling -region=us-east-1 -access-key-id=<id> -secret-access-key=<key>
